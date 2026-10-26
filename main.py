@@ -14,6 +14,7 @@ class PostgresMassiveOLAPOptimizer:
 
     def create_massive_test_data(self):
         """Создает ОГРОМНЫЙ объем тестовых данных для реалистичного тестирования"""
+        require_demo_confirmation(self.conn_params)
         conn = psycopg2.connect(**self.conn_params)
         cur = conn.cursor()
 
