@@ -1,4 +1,6 @@
-# postgres_olap_optimizer_massive.py
+"""Synthetic PostgreSQL benchmarks. DESTRUCTIVE: only run on dedicated test databases."""
+
+import os
 import psycopg2
 import time
 import random
@@ -431,14 +433,9 @@ class PostgresMassiveOLAPOptimizer:
         print("\n✅ ОПТИМИЗАЦИЯ ЗАВЕРШЕНА НА МАССИВНЫХ ДАННЫХ!")
 
 
-def test_massive_queries():
+def test_massive_queries(connection_params=None):
     """Тестирование оптимизированных запросов на МАССИВНЫХ данных"""
-    optimizer = PostgresMassiveOLAPOptimizer({
-        "host": "localhost",
-        "database": "bank",
-        "user": "postgres",
-        "password": "1007"
-    })
+    optimizer = PostgresMassiveOLAPOptimizer(connection_params or get_connection_params())
 
     print("\n📊 ТЕСТИРОВАНИЕ ОПТИМИЗИРОВАННЫХ ЗАПРОСОВ НА МАССИВНЫХ ДАННЫХ")
     print("=" * 80)
@@ -701,7 +698,7 @@ def test_massive_queries():
             print(f"   ⚠️  УМЕРЕННЫЙ РЕЗУЛЬТАТ! Эффект есть, но можно улучшить!")
 
         # Показываем размеры данных
-        conn = psycopg2.connect(host="localhost", database="bank", user="postgres", password="1007")
+        conn = psycopg2.connect(**optimizer.conn_params)
         cur = conn.cursor()
         
         cur.execute("SELECT COUNT(*) FROM clients")
@@ -722,16 +719,35 @@ def test_massive_queries():
         print(f"   Общий объем: {clients_count + accounts_count + transactions_count:,} записей")
 
 
+def get_connection_params():
+    """Read PostgreSQL connection values from environment, not source code."""
+    password = os.getenv("PGPASSWORD")
+    if not password:
+        raise RuntimeError("Set PGPASSWORD for an isolated PostgreSQL demo database.")
+    return {
+        "host": os.getenv("PGHOST", "localhost"),
+        "port": int(os.getenv("PGPORT", "5432")),
+        "database": os.getenv("PGDATABASE", "vtb_demo"),
+        "user": os.getenv("PGUSER", "postgres"),
+        "password": password,
+    }
+
+
+def require_demo_confirmation(connection_params):
+    """Prevent running destructive DROP TABLE statements by accident."""
+    database = connection_params.get("database")
+    expected = os.getenv("DEMO_DB_CONFIRM")
+    if os.getenv("ALLOW_DESTRUCTIVE_DEMO") != "YES" or expected != database:
+        raise RuntimeError(
+            "This benchmark DROPS tables and recreates data. "
+            "Use a dedicated database and set ALLOW_DESTRUCTIVE_DEMO=YES "
+            "and DEMO_DB_CONFIRM to its exact database name."
+        )
+
+
 if __name__ == "__main__":
-    optimizer = PostgresMassiveOLAPOptimizer({
-        "host": "localhost",
-        "database": "bank",
-        "user": "postgres",
-        "password": "1007"
-    })
-
-    # Запускаем полную оптимизацию на МАССИВНЫХ данных
+    params = get_connection_params()
+    require_demo_confirmation(params)
+    optimizer = PostgresMassiveOLAPOptimizer(params)
     optimizer.run_complete_optimization()
-
-    # Тестируем оптимизированные запросы на МАССИВНЫХ данных
-    test_massive_queries()
+    test_massive_queries(params)
