@@ -1,5 +1,36 @@
 # PostgreSQL OLAP Optimization Lab
 
+> [!WARNING]
+> **DESTRUCTIVE SYNTHETIC DATA LAB.** Running `main.py` drops and recreates tables.
+> Never connect it to a production or shared database. Use an isolated demo database.
+> The script refuses to run unless you explicitly confirm the target database.
+
+## Safe setup (required)
+
+1. Create a **separate disposable PostgreSQL database**, for example `vtb_demo`. Do not use a database containing valuable data.
+2. Set connection variables `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE` and `PGPASSWORD`. Store actual credentials only in a local environment or secret manager.
+3. Set `ALLOW_DESTRUCTIVE_DEMO=YES` **and** `DEMO_DB_CONFIRM=vtb_demo` (or your exact disposable database name) before starting.
+4. Run `python main.py` only after verifying the database target.
+
+Example environment variable names (values intentionally omitted):
+
+```text
+PGHOST
+PGPORT
+PGUSER
+PGDATABASE
+PGPASSWORD
+ALLOW_DESTRUCTIVE_DEMO
+DEMO_DB_CONFIRM
+```
+
+Run safety checks with `pip install psycopg2-binary pytest && pytest -q`. CI covers safety gates and Python syntax; it does **not** run the 5-million-transaction benchmark.
+
+**Credential warning:** older Git commits contained an embedded database password. If that password was reused for any real account or database, rotate it. Removing it from the latest code does not erase Git history.
+
+---
+
+
 A Python-based performance lab for **analytical PostgreSQL workloads** on a large synthetic banking dataset.
 
 The project generates millions of records, runs expensive aggregation queries, applies several PostgreSQL optimization techniques and compares the execution time of the original and optimized query paths.
@@ -182,7 +213,7 @@ Install the dependency:
 pip install psycopg2-binary
 ```
 
-Create a PostgreSQL database, then update the connection configuration in `main.py` for your local environment.
+Create a separate disposable PostgreSQL database, then set the environment variables documented above. Do not edit credentials into source code.
 
 Run:
 
